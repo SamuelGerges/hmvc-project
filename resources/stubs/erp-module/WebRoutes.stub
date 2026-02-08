@@ -1,0 +1,22 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
+use Erp\{{moduleName}}\App\Http\Controllers\Admin\ModuleController;
+
+Route::group(
+    [
+        'prefix' => LaravelLocalization::setLocale(),
+        'middleware' => [
+            'auth:web',
+            '2faMiddelware',
+            'web',
+            'localeSessionRedirect',
+            'localizationRedirect',
+            'localeViewPath'
+        ]
+    ],
+    function () {
+        Route::resource('{{moduleRouteKey}}', ModuleController::class);
+    }
+);

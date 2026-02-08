@@ -1,0 +1,19 @@
+<?php
+
+namespace Erp\{{moduleName}}\App\Http\Controllers\Api;
+
+use App\Enum\Constants;
+use App\Http\Controllers\Controller;
+use Erp\{{moduleName}}\App\Services\ModuleService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+
+class ModuleController extends Controller
+{
+    use UploadTrait;
+
+    public function __construct(
+        protected ModuleService $moduleService
+    ) {
+    }
+}

@@ -1,0 +1,16 @@
+<?php
+
+namespace Erp\{{moduleName}}\App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class {{modelName}} extends Model
+{
+    protected $table = "";
+    protected $connection = "";
+    protected $fillable = [
+        // Add your fillable fields here
+    ];
+
+    // Add relationships and other model methods here
+}

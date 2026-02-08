@@ -1,0 +1,28 @@
+<?php
+
+namespace Erp\{{moduleName}}\App\Http\Controllers\Admin;
+
+use App\Enum\Constants;
+use App\Http\Controllers\Controller;
+use Erp\{{moduleName}}\App\Services\ModuleService;
+use Erp\{{moduleName}}\App\DataTables\ModuleDataTables;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+
+class ModuleController extends Controller
+{
+    public function __construct(
+        protected ModuleService $moduleService
+    ) {
+    }
+
+    public function index(ModuleDataTables $dataTable)
+    {
+        return $dataTable->render('{{moduleViewNamespace}}::index');
+    }
+
+    public function create()
+    {
+        return view('{{moduleViewNamespace}}::create');
+    }
+}

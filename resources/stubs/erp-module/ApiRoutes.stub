@@ -1,0 +1,12 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use Erp\{{moduleName}}\App\Http\Controllers\Api\ModuleController;
+
+Route::group(
+    ['middleware' => ['api', 'auth:api'], 'prefix' => 'api'],
+    function () {
+        Route::apiResource('{{moduleRouteKey}}', ModuleController::class);
+        // Add more API routes here
+    }
+);
