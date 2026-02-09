@@ -1,10 +1,10 @@
 <?php
 
-namespace Erp\{{moduleName}}\App\Providers;
+namespace Erp\HR\App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 
-class {{moduleName}}ServiceProvider extends ServiceProvider
+class HRServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
@@ -12,7 +12,7 @@ class {{moduleName}}ServiceProvider extends ServiceProvider
 
         // Module base directory relative to project root
         // Example: Erp/HR/
-        $baseDir = 'Erp' . $dir . '{{moduleName}}' . $dir;
+        $baseDir = 'Erp' . $dir . 'HR' . $dir;
 
         // Load module routes
         $this->loadRoutesFrom(
@@ -28,7 +28,7 @@ class {{moduleName}}ServiceProvider extends ServiceProvider
         // View namespace = module name (lowercase recommended)
         $this->loadViewsFrom(
             base_path($baseDir . 'resources' . $dir . 'views'),
-            '{{moduleViewNamespace}}'
+            'h_r'
         );
     }
 }

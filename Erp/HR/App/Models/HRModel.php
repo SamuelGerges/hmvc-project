@@ -1,10 +1,10 @@
 <?php
 
-namespace Erp\{{moduleName}}\App\Models;
+namespace Erp\HR\App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class {{moduleName}} extends Model
+class HR extends Model
 {
     protected $table = "";
     protected $connection = "";

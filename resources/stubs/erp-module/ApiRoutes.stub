@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Erp\{{moduleName}}\App\Http\Controllers\Api\ModuleController;
+use Erp\{{moduleName}}\App\Http\Controllers\Api\{{moduleName}}Controller;
 
 Route::group(
     ['middleware' => ['api', 'auth:api'], 'prefix' => 'api'],

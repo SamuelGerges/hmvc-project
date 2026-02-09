@@ -8,9 +8,8 @@ use Illuminate\Support\Str;
 
 class GenerateErpModule extends Command
 {
-
     protected $signature = 'make:erp-module
-                            {module : Module name (e.g., HR or Recruitment/AgencyContract)}
+                            {module : The name of the ERP module (e.g., BusinessDevelopment)}
                             {--all : Generate all files and folders}
                             {--controller : Generate controller}
                             {--api : Generate API controller}
@@ -24,256 +23,232 @@ class GenerateErpModule extends Command
                             {--views : Generate views folder}
                             {--routes : Generate routes files}';
 
-    protected $description = 'Generate HMVC ERP module skeleton and optional parts';
+    protected $description = 'Generate HMVC structure for ERP modules';
 
-    protected string $moduleInput;
-    protected string $moduleStudlyPath;
-    protected string $moduleName;          // last segment only (Studly)
-    protected string $modulePath;          // full disk path
+    protected $moduleName;
+    protected $modulePath;
 
-    protected string $moduleViewNamespace; // snake of last segment
-    protected string $moduleRouteKey;
-    public function handle(): int
+    public function handle()
     {
-        // Read raw input (can include slashes for nested modules)
-        $this->moduleInput = trim($this->argument('module'));
+        $this->moduleName = $this->argument('module');
+        $this->modulePath = 'Erp/' . $this->moduleName;
 
-        // Normalize separators to forward slash
-        $relative = str_replace(['\\'], '/', $this->moduleInput);
-
-        // Convert each segment to StudlyCase for folder + namespace consistency
-        $this->moduleStudlyPath = collect(explode('/', $relative))
-            ->filter()
-            ->map(fn ($p) => Str::studly($p))
-            ->implode('/');
-
-        // Last segment only (HR, AgencyContract, Reports, etc.)
-        $this->moduleName = Str::afterLast($this->moduleStudlyPath, '/');
-
-        // Physical module folder
-        $this->modulePath = base_path('Erp/' . $this->moduleStudlyPath);
-
-        // For stubs (views + routes)
-        $this->moduleViewNamespace = Str::snake($this->moduleName);          // AgencyContract -> agency_contract
-        $this->moduleRouteKey      = Str::kebab($relative);                  // Recruitment/AgencyContract -> recruitment/agency-contract
-
-        // Always ensure module root exists
+        // Create module directory if it doesn't exist
         if (!File::exists($this->modulePath)) {
             File::makeDirectory($this->modulePath, 0755, true);
-            $this->info("Module created at: {$this->modulePath}");
+            $this->info("Module {$this->moduleName} created successfully.");
         }
 
-        // If user did not pass any flags => create only the basic module folders you want
-        if (!$this->anyOptionSelected()) {
-            $this->generateModuleSkeleton();
-            $this->info("No flags used. Only the base module folders were created.");
-            return self::SUCCESS;
-        }
-
-        // --all => skeleton + everything
         if ($this->option('all')) {
-            $this->generateModuleSkeleton();
-            $this->generateServiceProvider();
-            $this->generateRoutes();
-            $this->generateViews();
-
-            $this->generateModel();
-            $this->generateController();
-            $this->generateApiController();
-            $this->generateMigration();
-            $this->generateDatatable();
-            $this->generateService();
-            $this->generateRepository();
-            $this->generateResource();
-
-            return self::SUCCESS;
+            $this->generateAll();
+            return;
         }
 
-        // Always create skeleton first when generating any file
-        $this->generateModuleSkeleton();
-
-        if ($this->option('provider'))   $this->generateServiceProvider();
-        if ($this->option('routes'))     $this->generateRoutes();
-        if ($this->option('views'))      $this->generateViews();
-
-        if ($this->option('model'))      $this->generateModel();
         if ($this->option('controller')) $this->generateController();
-        if ($this->option('api'))        $this->generateApiController();
-        if ($this->option('migration'))  $this->generateMigration();
-        if ($this->option('datatable'))  $this->generateDatatable();
-        if ($this->option('service'))    $this->generateService();
+        if ($this->option('api')) $this->generateApiController();
+        if ($this->option('model')) $this->generateModel();
+        if ($this->option('migration')) $this->generateMigration();
+        if ($this->option('datatable')) $this->generateDatatable();
+        if ($this->option('service')) $this->generateService();
         if ($this->option('repository')) $this->generateRepository();
-        if ($this->option('resource'))   $this->generateResource();
-
-        return self::SUCCESS;
+        if ($this->option('provider')) $this->generateServiceProvider();
+        if ($this->option('resource')) $this->generateResource();
+        if ($this->option('views')) $this->generateViews();
+        if ($this->option('routes')) $this->generateRoutes();
     }
 
-    protected function anyOptionSelected(): bool
+    protected function generateAll()
     {
-        return $this->option('all')
-            || $this->option('controller')
-            || $this->option('api')
-            || $this->option('model')
-            || $this->option('migration')
-            || $this->option('datatable')
-            || $this->option('service')
-            || $this->option('repository')
-            || $this->option('provider')
-            || $this->option('resource')
-            || $this->option('views')
-            || $this->option('routes');
+        $this->generateModel();
+        $this->generateController();
+        $this->generateApiController();
+        $this->generateMigration();
+        $this->generateDatatable();
+        $this->generateServiceProvider();
+        $this->generateViews();
+        $this->generateRoutes();
     }
 
-
-    /**
-     * Creates the base folders you asked for:
-     * module root contains: App, resources, routes, database
-     * and inside App: Models, Providers, Services, Repositories, Http (Controllers + Requests)
-     */
-    protected function generateModuleSkeleton(): void
+    protected function getStub($type)
     {
-        // Top-level module folders
-        $this->createDirectory($this->modulePath . '/App');
-        $this->createDirectory($this->modulePath . '/resources');
-        $this->createDirectory($this->modulePath . '/routes');
-        $this->createDirectory($this->modulePath . '/database');
-
-        // App structure
-        $this->createDirectory($this->modulePath . '/App/Models');
-        $this->createDirectory($this->modulePath . '/App/Providers');
-        $this->createDirectory($this->modulePath . '/App/Services');
-        $this->createDirectory($this->modulePath . '/App/Repositories');
-
-        $this->createDirectory($this->modulePath . '/App/Http/Controllers');
-        $this->createDirectory($this->modulePath . '/App/Http/Requests');
-
-        // Optional common folders
-        $this->createDirectory($this->modulePath . '/App/DataTables');
-        $this->createDirectory($this->modulePath . '/App/Http/Resources');
-
-        // resources + database common folders
-        $this->createDirectory($this->modulePath . '/resources/views');
-        $this->createDirectory($this->modulePath . '/database/migrations');
+        return file_get_contents(resource_path("stubs/erp-module/$type.stub"));
     }
 
-    protected function getStub(string $type): string
+    protected function generateController()
     {
-        return file_get_contents(resource_path("stubs/erp-module/{$type}.stub"));
-    }
+        $controllerPath = $this->modulePath . '/App/Http/Controllers/Admin';
+        $this->createDirectory($controllerPath);
 
-    protected function applyModuleReplacements(string $template): string
-    {
-        return str_replace(
-            ['{{moduleStudlyPath}}', '{{moduleName}}', '{{moduleViewNamespace}}', '{{moduleRouteKey}}'],
-            [$this->moduleStudlyPath, $this->moduleName, $this->moduleViewNamespace, $this->moduleRouteKey],
-            $template
+        $controllerTemplate = str_replace(
+            ['{{moduleName}}', '{{moduleViewNamespace}}', '{{moduleRouteKey}}'],
+            [$this->moduleName, Str::snake($this->moduleName), Str::kebab($this->moduleName)],
+            $this->getStub('Controller')
         );
+
+        file_put_contents("{$controllerPath}/{$this->moduleName}Controller.php", $controllerTemplate);
+        $this->info("Controller created successfully.");
     }
 
-    protected function generateController(): void
+    protected function generateApiController()
     {
-        $path = $this->modulePath . '/App/Http/Controllers';
-        $template = $this->applyModuleReplacements($this->getStub('Controller'));
-        file_put_contents($path . '/ModuleController.php', $template);
-        $this->info("Controller created.");
+        $controllerPath = $this->modulePath . '/App/Http/Controllers/Api';
+        $this->createDirectory($controllerPath);
+
+        $controllerTemplate = str_replace(
+            ['{{moduleName}}', '{{moduleViewNamespace}}', '{{moduleRouteKey}}'],
+            [$this->moduleName, Str::snake($this->moduleName), Str::kebab($this->moduleName)],
+            $this->getStub('ApiController')
+        );
+
+        file_put_contents("{$controllerPath}/{$this->moduleName}Controller.php", $controllerTemplate);
+        $this->info("API Controller created successfully.");
     }
 
-    protected function generateApiController(): void
+    protected function generateModel()
     {
-        $path = $this->modulePath . '/App/Http/Controllers';
-        $template = $this->applyModuleReplacements($this->getStub('ApiController'));
-        file_put_contents($path . '/ApiModuleController.php', $template);
-        $this->info("API Controller created.");
+        $modelPath = $this->modulePath . '/App/Models';
+        $this->createDirectory($modelPath);
+
+        $modelTemplate = str_replace(
+            ['{{moduleName}}'],
+            [$this->moduleName],
+            $this->getStub('Model')
+        );
+
+        file_put_contents("{$modelPath}/{$this->moduleName}Model.php", $modelTemplate);
+        $this->info("Model created successfully.");
     }
 
-    protected function generateModel(): void
+    protected function generateMigration()
     {
-        $path = $this->modulePath . '/App/Models';
-        $template = $this->applyModuleReplacements($this->getStub('Model'));
-        file_put_contents($path . '/ModuleModel.php', $template);
-        $this->info("Model created.");
-    }
+        $migrationPath = $this->modulePath . '/database/migrations';
+        $this->createDirectory($migrationPath);
 
-    protected function generateMigration(): void
-    {
-        $path = $this->modulePath . '/database/migrations';
-
+        // Default table name derived from module name
         $tableName = Str::plural(Str::snake($this->moduleName));
         $migrationName = date('Y_m_d_His') . "_create_{$tableName}_table.php";
 
-        $template = $this->applyModuleReplacements($this->getStub('Migration'));
-        $template = str_replace(['{{tableName}}'], [$tableName], $template);
+        $migrationTemplate = str_replace(
+            ['{{tableName}}'],
+            [$tableName],
+            $this->getStub('Migration')
+        );
 
-        file_put_contents($path . '/' . $migrationName, $template);
-        $this->info("Migration created: {$migrationName}");
+        file_put_contents("{$migrationPath}/{$migrationName}", $migrationTemplate);
+        $this->info("Migration created successfully in module.");
     }
 
-    protected function generateDatatable(): void
+    protected function generateDatatable()
     {
-        $path = $this->modulePath . '/App/DataTables';
-        $template = $this->applyModuleReplacements($this->getStub('Datatable'));
-        file_put_contents($path . '/ModuleDataTables.php', $template);
-        $this->info("Datatable created.");
+        $datatablePath = $this->modulePath . '/App/DataTables';
+        $this->createDirectory($datatablePath);
+
+        $datatableTemplate = str_replace(
+            ['{{moduleName}}', '{{moduleViewNamespace}}', '{{moduleTableId}}'],
+            [$this->moduleName, Str::snake($this->moduleName), Str::kebab($this->moduleName)],
+            $this->getStub('Datatable')
+        );
+
+        file_put_contents("{$datatablePath}/{$this->moduleName}DataTables.php", $datatableTemplate);
+        $this->info("Datatable created successfully.");
     }
 
-    protected function generateService(): void
+    protected function generateService()
     {
-        $path = $this->modulePath . '/App/Services';
-        $template = $this->applyModuleReplacements($this->getStub('Service'));
-        file_put_contents($path . '/ModuleService.php', $template);
-        $this->info("Service created.");
+        $servicePath = $this->modulePath . '/App/Services';
+        $this->createDirectory($servicePath);
+
+        $serviceTemplate = str_replace(
+            ['{{moduleName}}'],
+            [$this->moduleName],
+            $this->getStub('Service')
+        );
+
+        file_put_contents("{$servicePath}/ModuleService.php", $serviceTemplate);
+        $this->info("Service created successfully.");
     }
 
-    protected function generateRepository(): void
+    protected function generateRepository()
     {
-        $path = $this->modulePath . '/App/Repositories';
-        $template = $this->applyModuleReplacements($this->getStub('Repository'));
-        file_put_contents($path . '/ModuleRepository.php', $template);
-        $this->info("Repository created.");
+        $repositoryPath = $this->modulePath . '/App/Repositories';
+        $this->createDirectory($repositoryPath);
+
+        $repositoryTemplate = str_replace(
+            ['{{moduleName}}'],
+            [$this->moduleName],
+            $this->getStub('Repository')
+        );
+
+        file_put_contents("{$repositoryPath}/ModuleRepository.php", $repositoryTemplate);
+        $this->info("Repository created successfully.");
     }
 
-    protected function generateServiceProvider(): void
+    protected function generateServiceProvider()
     {
-        $path = $this->modulePath . '/App/Providers';
-        $template = $this->applyModuleReplacements($this->getStub('ModuleServiceProvider'));
-        file_put_contents($path . '/ModuleServiceProvider.php', $template);
-        $this->info("ModuleServiceProvider created.");
+        $providerPath = $this->modulePath . '/App/Providers';
+        $this->createDirectory($providerPath);
+
+        $providerTemplate = str_replace(
+            ['{{moduleName}}', '{{moduleViewNamespace}}', '{{moduleRouteKey}}'],
+            [$this->moduleName, Str::snake($this->moduleName), Str::kebab($this->moduleName)],
+            $this->getStub('ServiceProvider') // keep same stub name you used
+        );
+
+        file_put_contents("{$providerPath}/{$this->moduleName}ServiceProvider.php", $providerTemplate);
+        $this->info("Service Provider created successfully.");
     }
 
-    protected function generateResource(): void
+    protected function generateResource()
     {
-        $path = $this->modulePath . '/App/Http/Resources';
-        $template = $this->applyModuleReplacements($this->getStub('Resource'));
-        file_put_contents($path . '/ModuleResource.php', $template);
-        $this->info("Resource created.");
+        $resourcePath = $this->modulePath . '/App/Http/Resources';
+        $this->createDirectory($resourcePath);
+
+        $resourceTemplate = str_replace(
+            ['{{moduleName}}'],
+            [$this->moduleName],
+            $this->getStub('Resource')
+        );
+
+        file_put_contents("{$resourcePath}/ModuleResource.php", $resourceTemplate);
+        $this->info("Resource created successfully.");
     }
 
-    protected function generateViews(): void
+    protected function generateViews()
     {
-        $path = $this->modulePath . '/resources/views';
-        $this->createDirectory($path);
-        $this->info("Views folder ready.");
+        $viewsPath = $this->modulePath . '/resources/views/';
+        $this->createDirectory($viewsPath);
+
+        $this->info("Views directory created successfully.");
     }
 
-    protected function generateRoutes(): void
+    protected function generateRoutes()
     {
-        $path = $this->modulePath . '/routes';
-        $this->createDirectory($path);
+        $routesPath = $this->modulePath . '/routes';
+        $this->createDirectory($routesPath);
 
-        $web = $this->applyModuleReplacements($this->getStub('WebRoutes'));
-        file_put_contents($path . '/web.php', $web);
+        // Generate web.php
+        $webTemplate = str_replace(
+            ['{{moduleName}}', '{{moduleRouteKey}}', '{{moduleViewNamespace}}'],
+            [$this->moduleName, Str::kebab($this->moduleName), Str::snake($this->moduleName)],
+            $this->getStub('WebRoutes')
+        );
+        file_put_contents("{$routesPath}/web.php", $webTemplate);
 
-        $api = $this->applyModuleReplacements($this->getStub('ApiRoutes'));
-        file_put_contents($path . '/api.php', $api);
+        // Generate api.php
+        $apiTemplate = str_replace(
+            ['{{moduleName}}', '{{moduleRouteKey}}', '{{moduleViewNamespace}}'],
+            [$this->moduleName, Str::kebab($this->moduleName), Str::snake($this->moduleName)],
+            $this->getStub('ApiRoutes')
+        );
+        file_put_contents("{$routesPath}/api.php", $apiTemplate);
 
-        $this->info("Routes created.");
+        $this->info("Routes files created successfully.");
     }
 
-    protected function createDirectory(string $path): void
+    protected function createDirectory($path)
     {
         if (!File::exists($path)) {
             File::makeDirectory($path, 0755, true);
         }
     }
-
 }

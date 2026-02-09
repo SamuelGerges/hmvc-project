@@ -1,22 +1,22 @@
 <?php
 
-namespace Erp\{{moduleName}}\App\DataTables;
+namespace Erp\HR\App\DataTables;
 
-use Erp\{{moduleName}}\App\Models\{{moduleName}} ;
+use Erp\HR\App\Models\HR ;
 use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
 use Yajra\DataTables\Services\DataTable;
 
-class {{moduleName}}DataTables extends DataTable
+class HRDataTables extends DataTable
 {
     public function dataTable($query)
     {
         return datatables()
             ->eloquent($query)
-            ->addColumn('action', '{{moduleViewNamespace}}::action');
+            ->addColumn('action', 'h_r::action');
     }
 
-    public function query({{moduleName}} $model)
+    public function query(HR $model)
     {
         return $model->newQuery();
     }
@@ -24,7 +24,7 @@ class {{moduleName}}DataTables extends DataTable
     public function html()
     {
         return $this->builder()
-                    ->setTableId('{{moduleTableId}}-table')
+                    ->setTableId('h-r-table')
                     ->columns($this->getColumns())
                     ->minifiedAjax()
                     ->dom('Bfrtip')

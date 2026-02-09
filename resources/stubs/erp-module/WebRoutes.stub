@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
-use Erp\{{moduleName}}\App\Http\Controllers\Admin\ModuleController;
+use Erp\{{moduleName}}\App\Http\Controllers\Admin\{{moduleName}}Controller;
 
 Route::group(
     [
@@ -17,6 +17,6 @@ Route::group(
         ]
     ],
     function () {
-        Route::resource('{{moduleRouteKey}}', ModuleController::class);
+        Route::resource('{{moduleRouteKey}}', {{moduleName}}Controller::class);
     }
 );
